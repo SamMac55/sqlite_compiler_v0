@@ -7,11 +7,4 @@
 *.tokens
 
 proposed_grammar.g4
-
-*BaseVisitor.java
-
-*Lexer.java
-
-*Parser.java
-
-*Visitor.java
+liteQL*.java
