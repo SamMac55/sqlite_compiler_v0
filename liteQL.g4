@@ -25,10 +25,10 @@ createTable: NEW TABLE tablename=ID  createAttrList  ';';
 //declareBlock: DECLARE tableSource declaredTablesList ';';
 
 //CLAUSES
-limitClause: FIND INTEGER;
-orderClause: SORT BY attributeList 'desc'       #sortDesc
-           | SORT BY attributeList 'asc'        #sortAsc
-           | SORT BY attributeList              #sortAscDefault
+limitClause: FIND num=INTEGER;
+orderClause: SORT BY attributeList order='desc'       
+           | SORT BY attributeList order='asc'        
+           | SORT BY attributeList              
            ;
 joinClause: WITH tableSource selectList USING attribute; //simplified join clause to only allow joining on one attribute (means that both tables involved in join will need to have said attribute)
 whereClause: WITH conjoinedAttrComparison;
@@ -56,14 +56,8 @@ constraint: NOT NULL
 
 //SELECTING ATTRIBUTES
 //a select list is a list of select items
-selectList: selectItem ',' selectList                        #listOfSelectItem
-          | selectItem                                      #singleSelectItem
-          ;                         
-
-selectItem
-  : attribute                                             #selectAttr
-  |  ALL                                                  #selectAllAttr
-  ;
+selectList: attributeList
+        | ALL;
 
 //LIST OF ATTRIBUTES (used in group by and order by clauses)              
 attributeList

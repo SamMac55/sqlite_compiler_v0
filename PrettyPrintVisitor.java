@@ -32,7 +32,12 @@ public class PrettyPrintVisitor extends liteQLBaseVisitor<String> {
         return "UPDATE " + ctx.tableSource().getText() + " SET " + ctx.assignList().getText() + " " + visit(ctx.whereClause()) + ";"; 
      }
 
-	@Override public String visitSelect(liteQLParser.SelectContext ctx) { return visitChildren(ctx); }
+	@Override public String visitSelect(liteQLParser.SelectContext ctx) { 
+        if(ctx.joinClause()!=null){
+            return createJoinSelect(ctx);
+        }
+        return createSelectStmt(ctx);
+     }
 
 	@Override public String visitCreateTable(liteQLParser.CreateTableContext ctx) { return visitChildren(ctx); }
     
@@ -73,19 +78,111 @@ public class PrettyPrintVisitor extends liteQLBaseVisitor<String> {
     }
     public String getComparisonSymbol(String comparison){
         switch(comparison){
-            case "less than":
+            case "lessthan":
                 return "<";
-            case "greater than":
+            case "greaterthan":
                 return ">";
-            case "at least":
+            case "atleast":
                 return ">=";
-            case "at most":
+            case "atmost":
                 return "<=";
             case "is":
                 return "=";
-            case "is not":
+            case "isnot":
                 return "!=";
         }
         return comparison;
+    }
+    //when there is no join
+    public String createSelectStmt(liteQLParser.SelectContext ctx){
+        StringBuilder sb = new StringBuilder();
+        String selectList;
+        if(ctx.selectList().getText().equals("all")){
+            selectList = "*";
+        }else{
+            selectList = ctx.selectList().getText();
+        }
+        sb.append("SELECT ").append(selectList).append(" FROM " + ctx.tableSource().getText());
+        //where clause
+        if (ctx.whereClause() != null) {
+            sb.append(" ").append(visit(ctx.whereClause()));// get where
+        }
+        //group by
+        if (ctx.groupClause() != null) {
+            sb.append(" ").append("GROUP BY ").append(ctx.groupClause().attributeList().getText());//get group
+        }
+        if (ctx.havingClause() != null) {
+            sb.append(" ").append("HAVING ").append(visit(ctx.havingClause().conjoinedAttrComparison()));//get having
+        }
+        if (ctx.orderClause() != null) {
+            sb.append(" ").append("ORDER BY ").append(ctx.orderClause().attributeList().getText());//get order
+            if(ctx.orderClause().order.equals("desc")){
+                sb.append( " DESC");
+            }
+        }
+        if (ctx.limitClause() != null) {
+            sb.append(" ").append("LIMIT ").append(ctx.limitClause().num.getText());//get limit
+        }
+        sb.append(";");
+        return sb.toString();
+    }
+    //when there is a join
+    //TODO: FIX IT SO THAT THE OTHER CLAUSES ALSO ALIAS (semantics)
+    public String createJoinSelect(liteQLParser.SelectContext ctx){
+        StringBuilder sb = new StringBuilder();
+        String table1 = ctx.tableSource().getText();
+        String table2 = ctx.joinClause().tableSource().getText();
+        String fullSelectList = addAlias(table1,table2,ctx.selectList().getText(),ctx.joinClause().selectList().getText());
+        sb.append("SELECT " + fullSelectList + " FROM " + table1 + " JOIN " + table2 + " ON " + ctx.joinClause().attribute().getText());
+        //where clause
+        if (ctx.whereClause() != null) {
+            sb.append(" ").append(visit(ctx.whereClause()));// get where
+        }
+        //group by
+        if (ctx.groupClause() != null) {
+            sb.append(" ").append("GROUP BY ").append(ctx.groupClause().attributeList().getText());//get group
+        }
+        if (ctx.havingClause() != null) {
+            sb.append(" ").append("HAVING ").append(visit(ctx.havingClause().conjoinedAttrComparison()));//get having
+        }
+        if (ctx.orderClause() != null) {
+            sb.append(" ").append("ORDER BY ").append(ctx.orderClause().attributeList().getText());//get order
+            if(ctx.orderClause().order.equals("desc")){
+                sb.append( " DESC");
+            }
+        }
+        if (ctx.limitClause() != null) {
+            sb.append(" ").append("LIMIT ").append(ctx.limitClause().num.getText());//get limit
+        }
+        sb.append(";");
+        return sb.toString();
+    }
+
+    //adds alias to select lists
+    public String addAlias(String table1, String table2, String firstList, String secondList){
+        String fullList = "";
+        String[] splitFirst;
+        String[] splitSecond;
+        if(firstList.equals("all")){
+            fullList+=table1 + ".* ";
+            splitSecond = secondList.split(",");
+            splitFirst = new String[0];
+        }else if (secondList.equals("all")){
+            fullList+=table2 + ".* ";
+            splitFirst = firstList.split(",");
+            splitSecond = new String[0];
+        }else{
+            splitFirst = firstList.split(",");
+            splitSecond = secondList.split(",");
+        }
+        for(int i = 0; i< splitFirst.length; i++){
+            splitFirst[i] = table1 + "." + splitFirst[i];
+            fullList+= splitFirst[i] + " ";
+        }
+         for(int i = 0; i< splitSecond.length; i++){
+            splitSecond[i] = table2 + "." + splitSecond[i];
+            fullList+=splitSecond[i] + " ";
+        }
+        return fullList;
     }
 }
