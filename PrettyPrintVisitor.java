@@ -143,7 +143,19 @@ public class PrettyPrintVisitor extends liteQLBaseVisitor<String> {
     
     @Override
     public String visitCreateAttrWithConstraint(liteQLParser.CreateAttrWithConstraintContext ctx){
-        return "\t" +ctx.name.getText() + " " + getType(ctx.type().getText()) + " (" + visit(ctx.constraintList()) + ")";
+        String constraintList = ctx.constraintList().getText();
+        String[] splitConstraints = constraintList.split(",");
+        for(int i = 0; i < splitConstraints.length; i++){
+            if(splitConstraints[i].trim().equalsIgnoreCase("pk")){
+                splitConstraints[i] = "PRIMARY KEY";
+            } else if (splitConstraints[i].trim().equalsIgnoreCase("notnull")){
+                splitConstraints[i] = "NOT NULL";
+            } else {
+                splitConstraints[i] = "INVALID CONSTRAINT: " + splitConstraints[i];
+            }
+        }
+        constraintList = String.join(" ", splitConstraints);
+        return "\t" +ctx.name.getText() + " " + getType(ctx.type().getText()) + " (" + constraintList + ")";
     }
     //create attribute -no constraints
     @Override

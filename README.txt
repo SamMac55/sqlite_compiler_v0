@@ -35,7 +35,7 @@ sqlite3 --version
 
 # How to build and run (WSL/Linux)
 Start by running:
-antlr4 command_grammar.g4 -no-listener -visitor
+antlr4 liteQL.g4 -no-listener -visitor
 CP=$(grep '^CLASSPATH=' "$(which antlr4)" | cut -d= -f2-):.
 
 **this should generate the visitor/lexer/parser that is needed for Driver.java and PrettyPrintVisitor.java**
